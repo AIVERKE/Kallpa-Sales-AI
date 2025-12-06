@@ -1,47 +1,77 @@
 from openai import OpenAI
-from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
+import json
+from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, SYSTEM_PROMPT
+from db.queries import get_memory, save_memory
 
 client = OpenAI(
     api_key=DEEPSEEK_API_KEY,
     base_url=f"{DEEPSEEK_BASE_URL}/v1"
 )
 
-def ai_response(prompt):
+
+def ai_response(user_id, prompt, memory_context=""):
+    # 1. Obtener memoria previa
+    if not memory_context:
+        memory = get_memory(user_id)
+        memory_context = (
+            f"Memoria del cliente:\n{memory}\n"
+            if memory else
+            "Memoria del cliente: Sin memoria previa.\n"
+        )
+
+    # 2. Construir mensajes
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "assistant", "content": memory_context},
+        {"role": "user", "content": prompt},
+    ]
+
+    # 3. Llamada al modelo
     response = client.chat.completions.create(
         model=DEEPSEEK_MODEL,
-        messages=[
-            {"role": "system", 
-            "content": """
-            Eres Kallpa Sales AI, un asistente de ventas profesional, amable y experto.
-
-            💼 PERSONALIDAD  
-            - Tono cálido, profesional, amistoso.  
-            - Usas jerga coloquial paceña bolivia para ventas.  
-            - Respondes de forma clara, concisa y útil.  
-            - Siempre hablas de tú, nunca de usted.  
-
-            🎯 ESPECIALIDADES  
-            - Guiar a clientes sobre productos.  
-            - Recomendar soluciones según necesidades.  
-            - Asistir a vendedores de Kallpa a cerrar ventas.  
-            - Recordar al usuario información relevante del contexto.  
-
-            📏 REGLAS  
-            - No inventes datos sobre productos.  
-            - Si no tienes información suficiente, pide detalles.  
-            - Siempre mantén un enfoque centrado en ventas.  
-            - Puedes hacer preguntas estratégicas sobre presupuesto, necesidad y urgencia.  
-
-            🤖 IDENTIDAD  
-            - Te presentas como “Kallpa Sales AI”.  
-            - Representas a la marca Kallpa.  
-            - Eres cortés, proactivo, nunca agresivo.
-            - No seas robot. Sé cálido y proactivo.  
-            """
-            }
-            ,
-            {"role": "user", "content": prompt}
-        ]
+        messages=messages
     )
 
-    return response.choices[0].message.content
+    output = response.choices[0].message.content
+
+    # 4. Procesar <memoria> si existe
+    if "<memoria>" in output:
+        try:
+            json_text = output.split("<memoria>")[1].split("</memoria>")[0]
+            data = json.loads(json_text)
+
+            FIELD_MAP = {
+                "dolor": "dolor_principal"
+            }
+
+            BOOLEAN_FIELDS = ["interes"]
+
+            for field, value in data.items():
+                mapped_field = FIELD_MAP.get(field, field)
+
+                # Normalizar booleanos
+                if mapped_field in BOOLEAN_FIELDS:
+                    if isinstance(value, bool):
+                        pass
+                    else:
+                        val = str(value).lower().strip()
+                        if val in ["true", "si", "sí", "1"]:
+                            value = True
+                        elif val in ["false", "no", "0"]:
+                            value = False
+                        else:
+                            print(f"Valor inválido para booleano ({mapped_field}):", value)
+                            continue
+
+                save_memory(user_id, mapped_field, value)
+
+            # Limpiar memoria del mensaje visible
+            output = output.replace(f"<memoria>{json_text}</memoria>", "").strip()
+
+        except Exception as e:
+            print("Error procesando memoria:", e)
+
+    # Limpiar restos
+    output = output.replace("<memoria>", "").replace("</memoria>", "").strip()
+
+    return output
