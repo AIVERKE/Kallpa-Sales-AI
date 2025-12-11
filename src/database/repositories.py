@@ -1,4 +1,4 @@
-from db.connection import get_connection
+from src.database.connection import get_connection
 
 def save_ai_interaction(user_id, customer_id, prompt, response):
     conn = get_connection()
@@ -22,6 +22,11 @@ def get_memory(telegram_user_id):
     """, (telegram_user_id,))
     
     row = cur.fetchone()
+    # Convert tuple to dict if row exists to match expected usage in ai.py
+    if row:
+        columns = [desc[0] for desc in cur.description]
+        return dict(zip(columns, row))
+    
     cur.close()
     conn.close()
     return row
@@ -31,6 +36,7 @@ def save_memory(telegram_user_id, field, value):
     cur = conn.cursor()
 
     # Si el registro no existe, lo creamos
+    # Note: Ideally usage of format here should be validated against allowed fields to prevent SQLi
     cur.execute("""
         INSERT INTO memory (telegram_user_id, {0})
         VALUES (%s, %s)

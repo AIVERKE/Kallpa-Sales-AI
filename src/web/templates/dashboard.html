@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - Kallpa Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Outfit", "sans-serif"] },
+            colors: {
+              kallpa: { DEFAULT: "#1A73E8", dark: "#1557b0", light: "#4285f4" },
+              energy: { DEFAULT: "#F4B400" },
+              petroleum: { DEFAULT: "#333333", light: "#4d4d4d" },
+            },
+          },
+        },
+      };
+    </script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body class="bg-gray-50 font-sans text-petroleum">
+    <div class="flex h-screen overflow-hidden">
+      <!-- Sidebar -->
+      <aside
+        class="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col"
+      >
+        <div class="h-20 flex items-center px-8 border-b border-gray-100">
+          <div
+            class="w-8 h-8 bg-gradient-to-br from-kallpa to-kallpa-dark rounded-lg flex items-center justify-center text-white font-bold shadow-md mr-3"
+          >
+            K
+          </div>
+          <span class="font-bold text-xl tracking-tight"
+            >Kallpa<span class="text-kallpa">AI</span></span
+          >
+        </div>
+
+        <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+          <a
+            href="#"
+            class="flex items-center gap-3 px-4 py-3 text-kallpa bg-blue-50 rounded-xl font-semibold transition-colors"
+          >
+            <i class="fa-solid fa-chart-pie w-5"></i> Dashboard
+          </a>
+          <a
+            href="#"
+            class="flex items-center gap-3 px-4 py-3 text-gray-500 hover:text-petroleum hover:bg-gray-50 rounded-xl font-medium transition-colors"
+          >
+            <i class="fa-solid fa-box w-5"></i> Productos
+          </a>
+          <a
+            href="#"
+            class="flex items-center gap-3 px-4 py-3 text-gray-500 hover:text-petroleum hover:bg-gray-50 rounded-xl font-medium transition-colors"
+          >
+            <i class="fa-solid fa-shopping-cart w-5"></i> Pedidos
+            <span
+              class="ml-auto bg-energy text-white text-xs font-bold px-2 py-0.5 rounded-full"
+              >3</span
+            >
+          </a>
+          <a
+            href="#"
+            class="flex items-center gap-3 px-4 py-3 text-gray-500 hover:text-petroleum hover:bg-gray-50 rounded-xl font-medium transition-colors"
+          >
+            <i class="fa-solid fa-users w-5"></i> Clientes
+          </a>
+
+          <div
+            class="pt-6 pb-2 px-4 text-xs font-bold text-gray-400 uppercase tracking-wider"
+          >
+            Configuración
+          </div>
+
+          <a
+            href="#"
+            class="flex items-center gap-3 px-4 py-3 text-gray-500 hover:text-petroleum hover:bg-gray-50 rounded-xl font-medium transition-colors"
+          >
+            <i class="fa-brands fa-telegram w-5"></i> Bot Telegram
+          </a>
+          <a
+            href="#"
+            class="flex items-center gap-3 px-4 py-3 text-gray-500 hover:text-petroleum hover:bg-gray-50 rounded-xl font-medium transition-colors"
+          >
+            <i class="fa-solid fa-qrcode w-5"></i> Pagos QR
+          </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-100">
+          <a
+            href="{{ url_for('auth.logout') }}"
+            class="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl font-medium transition-colors"
+          >
+            <i class="fa-solid fa-sign-out-alt w-5"></i> Cerrar Sesión
+          </a>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Top Header -->
+        <header
+          class="h-20 bg-white border-b border-gray-200 flex justify-between items-center px-8"
+        >
+          <h2 class="text-2xl font-bold text-petroleum">Resumen General</h2>
+          <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+              <div
+                class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold"
+              >
+                {{ current_user.username[0] | upper }}
+              </div>
+              <div class="hidden md:block">
+                <div class="text-sm font-bold text-petroleum">
+                  {{ current_user.username }}
+                </div>
+                <div class="text-xs text-gray-500 capitalize">
+                  {{ current_user.role }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Scrollable Content -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-8">
+          <!-- Stats Grid -->
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+          >
+            <!-- Stat Card 1 -->
+            <div
+              class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"
+            >
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <p class="text-sm text-gray-500 font-medium mb-1">
+                    Ventas Hoy
+                  </p>
+                  <h3 class="text-2xl font-bold text-petroleum">Bs 1,240</h3>
+                </div>
+                <div
+                  class="w-10 h-10 bg-green-100 text-green-600 rounded-xl flex items-center justify-center"
+                >
+                  <i class="fa-solid fa-dollar-sign"></i>
+                </div>
+              </div>
+              <div class="flex items-center text-xs text-green-600 font-bold">
+                <i class="fa-solid fa-arrow-up mr-1"></i> +12% vs ayer
+              </div>
+            </div>
+
+            <!-- Stat Card 2 -->
+            <div
+              class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"
+            >
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <p class="text-sm text-gray-500 font-medium mb-1">
+                    Pedidos Activos
+                  </p>
+                  <h3 class="text-2xl font-bold text-petroleum">8</h3>
+                </div>
+                <div
+                  class="w-10 h-10 bg-blue-100 text-kallpa rounded-xl flex items-center justify-center"
+                >
+                  <i class="fa-solid fa-shopping-bag"></i>
+                </div>
+              </div>
+              <div class="text-xs text-gray-500">3 pendientes de envío</div>
+            </div>
+
+            <!-- Stat Card 3 -->
+            <div
+              class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"
+            >
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <p class="text-sm text-gray-500 font-medium mb-1">
+                    Bot Status
+                  </p>
+                  <h3 class="text-2xl font-bold text-petroleum">En Línea</h3>
+                </div>
+                <div
+                  class="w-10 h-10 bg-green-100 text-green-600 rounded-xl flex items-center justify-center animate-pulse"
+                >
+                  <i class="fa-solid fa-robot"></i>
+                </div>
+              </div>
+              <div class="text-xs text-gray-500">
+                Respondidos 45 mensajes hoy
+              </div>
+            </div>
+
+            <!-- Stat Card 4 -->
+            <div
+              class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"
+            >
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <p class="text-sm text-gray-500 font-medium mb-1">
+                    Clientes Nuevos
+                  </p>
+                  <h3 class="text-2xl font-bold text-petroleum">12</h3>
+                </div>
+                <div
+                  class="w-10 h-10 bg-energy-100 text-energy"
+                  style="background-color: #fef3c7"
+                >
+                  <i class="fa-solid fa-user-plus"></i>
+                </div>
+              </div>
+              <div class="flex items-center text-xs text-green-600 font-bold">
+                <i class="fa-solid fa-arrow-up mr-1"></i> +4 esta semana
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Grid: Chart & Actions -->
+          <div class="grid lg:grid-cols-3 gap-8 mb-8">
+            <!-- Chart Section -->
+            <div
+              class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100"
+            >
+              <h3 class="text-lg font-bold text-petroleum mb-6">
+                Rendimiento de Ventas
+              </h3>
+              <canvas id="salesChart" height="150"></canvas>
+            </div>
+
+            <!-- Quick Actions -->
+            <div
+              class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"
+            >
+              <h3 class="text-lg font-bold text-petroleum mb-6">
+                Acciones Rápidas
+              </h3>
+              <div class="space-y-3">
+                <button
+                  class="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-kallpa hover:bg-blue-50 transition-all group"
+                >
+                  <div
+                    class="w-10 h-10 bg-kallpa text-white rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform"
+                  >
+                    <i class="fa-solid fa-plus"></i>
+                  </div>
+                  <div class="text-left">
+                    <h4 class="font-bold text-petroleum text-sm">
+                      Nuevo Producto
+                    </h4>
+                    <p class="text-xs text-gray-500">Añadir al catálogo</p>
+                  </div>
+                </button>
+
+                <button
+                  class="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-energy hover:bg-yellow-50 transition-all group"
+                >
+                  <div
+                    class="w-10 h-10 bg-energy text-white rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform"
+                  >
+                    <i class="fa-solid fa-bullhorn"></i>
+                  </div>
+                  <div class="text-left">
+                    <h4 class="font-bold text-petroleum text-sm">
+                      Enviar Oferta
+                    </h4>
+                    <p class="text-xs text-gray-500">Difusión masiva</p>
+                  </div>
+                </button>
+
+                <button
+                  class="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-green-500 hover:bg-green-50 transition-all group"
+                >
+                  <div
+                    class="w-10 h-10 bg-green-500 text-white rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform"
+                  >
+                    <i class="fa-brands fa-whatsapp"></i>
+                  </div>
+                  <div class="text-left">
+                    <h4 class="font-bold text-petroleum text-sm">Soporte</h4>
+                    <p class="text-xs text-gray-500">Contactar ayuda</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Orders Table -->
+          <div
+            class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+          >
+            <div
+              class="p-6 border-b border-gray-100 flex justify-between items-center"
+            >
+              <h3 class="text-lg font-bold text-petroleum">
+                Pedidos Recientes
+              </h3>
+              <button class="text-sm text-kallpa font-semibold hover:underline">
+                Ver todos
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr
+                    class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider"
+                  >
+                    <th class="p-4 font-semibold">ID Pedido</th>
+                    <th class="p-4 font-semibold">Cliente</th>
+                    <th class="p-4 font-semibold">Estado</th>
+                    <th class="p-4 font-semibold">Monto</th>
+                    <th class="p-4 font-semibold">Fecha</th>
+                  </tr>
+                </thead>
+                <tbody class="text-sm text-petroleum divide-y divide-gray-100">
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="p-4 font-medium">#ORD-001</td>
+                    <td class="p-4">Juan Pérez</td>
+                    <td class="p-4">
+                      <span
+                        class="px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700"
+                        >Completado</span
+                      >
+                    </td>
+                    <td class="p-4">Bs 150.00</td>
+                    <td class="p-4 text-gray-500">Hace 10 min</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="p-4 font-medium">#ORD-002</td>
+                    <td class="p-4">María Lopez</td>
+                    <td class="p-4">
+                      <span
+                        class="px-2 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700"
+                        >Pendiente</span
+                      >
+                    </td>
+                    <td class="p-4">Bs 45.00</td>
+                    <td class="p-4 text-gray-500">Hace 1 hora</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="p-4 font-medium">#ORD-003</td>
+                    <td class="p-4">Carlos Ruiz</td>
+                    <td class="p-4">
+                      <span
+                        class="px-2 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700"
+                        >Enviado</span
+                      >
+                    </td>
+                    <td class="p-4">Bs 89.50</td>
+                    <td class="p-4 text-gray-500">Hace 3 horas</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Chart Config -->
+    <script>
+      const ctx = document.getElementById("salesChart").getContext("2d");
+      new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"],
+          datasets: [
+            {
+              label: "Ventas (Bs)",
+              data: [1200, 1900, 300, 500, 2300, 3400, 1240], // Datos simulados
+              borderColor: "#1A73E8",
+              backgroundColor: "rgba(26, 115, 232, 0.1)",
+              tension: 0.4,
+              fill: true,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+          },
+          scales: {
+            y: { beginAtZero: true },
+          },
+        },
+      });
+    </script>
+  </body>
+</html>

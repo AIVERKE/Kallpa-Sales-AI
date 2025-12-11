@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kallpa Sales AI | Vende más, trabaja menos</title>
+
+    <!-- Meta tags for SEO -->
+    <meta
+      name="description"
+      content="Automatiza tus ventas en Telegram con Inteligencia Artificial. Kallpa Sales AI gestiona pedidos, pagos QR y envíos automáticamente."
+    />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Outfit", "sans-serif"],
+            },
+            colors: {
+              kallpa: {
+                DEFAULT: "#1A73E8", // Azul Kallpa
+                dark: "#1557b0",
+                light: "#4285f4",
+              },
+              energy: {
+                DEFAULT: "#F4B400", // Amarillo Energía
+                dark: "#d49b00",
+              },
+              petroleum: {
+                DEFAULT: "#333333", // Verde Petróleo
+                light: "#4d4d4d",
+                lighter: "#666666",
+              },
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- Custom CSS -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+
+    <!-- Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body
+    class="bg-gray-50 text-petroleum antialiased selection:bg-kallpa-light selection:text-white"
+  >
+    <!-- Background Blobs -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <!-- Navigation -->
+    <nav
+      class="fixed w-full z-50 transition-all duration-300 glass"
+      id="navbar"
+    >
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-20">
+          <!-- Logo -->
+          <div
+            class="flex-shrink-0 flex items-center gap-2 cursor-pointer"
+            onclick="window.scrollTo(0,0)"
+          >
+            <div
+              class="w-10 h-10 bg-gradient-to-br from-kallpa to-kallpa-dark rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg"
+            >
+              K
+            </div>
+            <span class="font-bold text-2xl tracking-tight text-petroleum"
+              >Kallpa<span class="text-kallpa">AI</span></span
+            >
+          </div>
+
+          <!-- Desktop Menu -->
+          <div class="hidden md:flex items-center space-x-8">
+            <a
+              href="#features"
+              class="text-petroleum-lighter hover:text-kallpa font-medium transition-colors"
+              >Funcionalidades</a
+            >
+            <a
+              href="#pricing"
+              class="text-petroleum-lighter hover:text-kallpa font-medium transition-colors"
+              >Precios</a
+            >
+
+            {% if current_user.is_authenticated %}
+            <a
+              href="{{ url_for('dashboard') }}"
+              class="text-petroleum-lighter hover:text-kallpa font-medium transition-colors"
+              >Dashboard</a
+            >
+            <a
+              href="{{ url_for('auth.logout') }}"
+              class="text-red-500 hover:text-red-700 font-medium transition-colors"
+              >Salir</a
+            >
+            {% else %}
+            <a
+              href="{{ url_for('auth.login') }}"
+              class="text-petroleum-lighter hover:text-kallpa font-medium transition-colors"
+              >Iniciar Sesión</a
+            >
+            <a
+              href="{{ url_for('auth.register') }}"
+              class="text-petroleum-lighter hover:text-kallpa font-medium transition-colors"
+              >Registrarse</a
+            >
+            {% endif %}
+
+            <a
+              href="https://t.me/kallpa_Sales_bot"
+              target="_blank"
+              class="bg-kallpa text-white px-6 py-2.5 rounded-full font-semibold hover:bg-kallpa-dark transition-all shadow-lg hover:shadow-kallpa/25 transform hover:-translate-y-0.5"
+            >
+              Probar Demo
+              <i class="fa-brands fa-telegram ml-2"></i>
+            </a>
+          </div>
+
+          <!-- Mobile menu button -->
+          <div class="md:hidden flex items-center">
+            <button
+              class="text-petroleum hover:text-kallpa focus:outline-none"
+              id="mobile-menu-btn"
+            >
+              <i class="fa-solid fa-bars text-2xl"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="hidden md:hidden glass border-t border-gray-200"
+        id="mobile-menu"
+      >
+        <div class="px-4 pt-2 pb-6 space-y-1">
+          <a
+            href="#features"
+            class="block px-3 py-3 rounded-md text-base font-medium text-petroleum hover:text-kallpa hover:bg-blue-50"
+            >Funcionalidades</a
+          >
+          <a
+            href="#pricing"
+            class="block px-3 py-3 rounded-md text-base font-medium text-petroleum hover:text-kallpa hover:bg-blue-50"
+            >Precios</a
+          >
+
+          {% if current_user.is_authenticated %}
+          <a
+            href="{{ url_for('dashboard') }}"
+            class="block px-3 py-3 rounded-md text-base font-medium text-petroleum hover:text-kallpa hover:bg-blue-50"
+            >Dashboard</a
+          >
+          <a
+            href="{{ url_for('auth.logout') }}"
+            class="block px-3 py-3 rounded-md text-base font-medium text-red-500 hover:text-red-700 hover:bg-red-50"
+            >Cerrar Sesión</a
+          >
+          {% else %}
+          <a
+            href="{{ url_for('auth.login') }}"
+            class="block px-3 py-3 rounded-md text-base font-medium text-petroleum hover:text-kallpa hover:bg-blue-50"
+            >Iniciar Sesión</a
+          >
+          <a
+            href="{{ url_for('auth.register') }}"
+            class="block px-3 py-3 rounded-md text-base font-medium text-petroleum hover:text-kallpa hover:bg-blue-50"
+            >Registrarse</a
+          >
+          {% endif %}
+
+          <a
+            href="https://t.me/kallpa_Sales_bot"
+            target="_blank"
+            class="block px-3 py-3 mt-4 text-center rounded-md text-base font-bold bg-kallpa text-white hover:bg-kallpa-dark"
+            >Probar Demo</a
+          >
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <div class="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+          <!-- Text Content -->
+          <div class="text-center lg:text-left animate-fade-in-up">
+            <div
+              class="inline-block px-4 py-1.5 mb-6 rounded-full bg-blue-50 border border-blue-100 text-kallpa font-semibold text-sm shadow-sm"
+            >
+              🚀 Potenciado con Inteligencia Artificial
+            </div>
+            <h1
+              class="text-5xl lg:text-7xl font-extrabold tracking-tight text-petroleum leading-[1.1] mb-6"
+            >
+              Vende más con <br />
+              <span class="text-gradient">Autopiloto</span>
+            </h1>
+            <p
+              class="text-lg lg:text-xl text-petroleum-lighter mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed"
+            >
+              Tu asistente de ventas 24/7 en Telegram. Gestiona pedidos, cobros
+              QR y delivery automáticamente mientras tú te enfocas en crecer.
+            </p>
+            <div
+              class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+            >
+              <a
+                href="https://t.me/kallpa_Sales_bot"
+                target="_blank"
+                class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-2xl text-white bg-kallpa hover:bg-kallpa-dark transition-all shadow-lg shadow-kallpa/30 transform hover:-translate-y-1"
+              >
+                Empezar Gratis
+                <i class="fa-solid fa-arrow-right ml-2"></i>
+              </a>
+              <a
+                href="#demo"
+                class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-2xl text-petroleum bg-white border border-gray-200 hover:bg-gray-50 transition-all shadow-sm hover:shadow-md"
+              >
+                <i class="fa-solid fa-play mr-2 text-kallpa"></i> Ver Demo
+              </a>
+            </div>
+
+            <div
+              class="mt-10 flex items-center justify-center lg:justify-start gap-6 text-sm text-petroleum-light font-medium"
+            >
+              <div class="flex items-center">
+                <i class="fa-solid fa-check text-green-500 mr-2"></i> Sin
+                tarjeta de crédito
+              </div>
+              <div class="flex items-center">
+                <i class="fa-solid fa-check text-green-500 mr-2"></i>
+                Configuración en 5 min
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Visual -->
+          <div
+            class="relative lg:h-[600px] flex items-center justify-center animate-float delay-200"
+          >
+            <div class="relative z-10 w-full max-w-lg">
+              <!-- Simulated Chat Interface -->
+              <div
+                class="glass-card rounded-3xl p-4 sm:p-6 transform rotate-2 hover:rotate-0 transition-transform duration-500"
+              >
+                <!-- Header -->
+                <div
+                  class="flex items-center gap-4 mb-6 border-b border-gray-100 pb-4"
+                >
+                  <div
+                    class="w-12 h-12 rounded-full bg-gradient-to-r from-kallpa to-blue-400 flex items-center justify-center text-white text-xl"
+                  >
+                    🤖
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-petroleum">Kallpa Bot</h3>
+                    <p class="text-xs text-green-500 font-medium">● En línea</p>
+                  </div>
+                </div>
+                <!-- Messages -->
+                <div class="space-y-4">
+                  <div class="flex items-start gap-3">
+                    <div
+                      class="w-8 h-8 rounded-full bg-blue-100 flex-shrink-0 flex items-center justify-center text-xs"
+                    >
+                      👤
+                    </div>
+                    <div
+                      class="bg-gray-100 rounded-2xl rounded-tl-none p-3 text-sm text-petroleum-light max-w-[80%]"
+                    >
+                      Hola, quiero pedir una pizza mediana 🍕
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-3 flex-row-reverse">
+                    <div
+                      class="w-8 h-8 rounded-full bg-kallpa flex-shrink-0 flex items-center justify-center text-white text-xs"
+                    >
+                      🤖
+                    </div>
+                    <div
+                      class="bg-kallpa text-white rounded-2xl rounded-tr-none p-3 text-sm shadow-md max-w-[80%]"
+                    >
+                      ¡Claro! 😋 Tenemos Pepperoni y Hawaiana. ¿Cuál prefieres?
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-3">
+                    <div
+                      class="w-8 h-8 rounded-full bg-blue-100 flex-shrink-0 flex items-center justify-center text-xs"
+                    >
+                      👤
+                    </div>
+                    <div
+                      class="bg-gray-100 rounded-2xl rounded-tl-none p-3 text-sm text-petroleum-light max-w-[80%]"
+                    >
+                      Pepperoni por favor.
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-3 flex-row-reverse">
+                    <div
+                      class="w-8 h-8 rounded-full bg-kallpa flex-shrink-0 flex items-center justify-center text-white text-xs"
+                    >
+                      🤖
+                    </div>
+                    <div
+                      class="bg-kallpa text-white rounded-2xl rounded-tr-none p-3 text-sm shadow-md max-w-[80%]"
+                    >
+                      Excelente. Aquí tienes tu QR de pago 👇
+                    </div>
+                  </div>
+                  <!-- QR Placeholder -->
+                  <div class="flex justify-end pr-11">
+                    <div
+                      class="bg-white p-2 rounded-xl border border-gray-200 w-32 h-32 flex items-center justify-center relative overflow-hidden"
+                    >
+                      <!-- QR Pattern Simulation -->
+                      <i class="fa-solid fa-qrcode text-4xl text-petroleum"></i>
+                      <!-- Energy Yellow accent -->
+                      <div
+                        class="absolute top-0 right-0 w-3 h-3 bg-energy rounded-bl-lg"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Floating Badges -->
+              <div
+                class="absolute -right-4 top-10 glass-card px-4 py-2 rounded-lg flex items-center gap-2 animate-bounce shadow-lg border-l-4 border-energy"
+              >
+                <span class="text-2xl">⚡</span>
+                <span class="font-bold text-petroleum text-sm"
+                  >Respuesta Inmediata</span
+                >
+              </div>
+              <div
+                class="absolute -left-8 bottom-20 glass-card px-4 py-2 rounded-lg flex items-center gap-2 animate-pulse shadow-lg border-l-4 border-kallpa"
+              >
+                <span class="text-2xl">💰</span>
+                <span class="font-bold text-petroleum text-sm"
+                  >Cobro Verificado</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-white relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-3xl mx-auto mb-16">
+          <span class="text-kallpa font-bold tracking-wider uppercase text-sm"
+            >Características</span
+          >
+          <h2
+            class="text-3xl md:text-4xl font-extrabold text-petroleum mt-2 mb-4"
+          >
+            Todo lo que necesitas para vender
+          </h2>
+          <p class="text-lg text-petroleum-light">
+            Deja de perder tiempo en chats interminables. Automatiza hoy.
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+          <!-- Feature 1 -->
+          <div
+            class="group p-8 rounded-3xl bg-gray-50 hover:bg-white border border-gray-100 hover:border-kallpa hover:shadow-xl hover:shadow-kallpa/10 transition-all duration-300"
+          >
+            <div
+              class="w-14 h-14 rounded-2xl bg-blue-100 text-kallpa flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"
+            >
+              <i class="fa-solid fa-robot"></i>
+            </div>
+            <h3 class="text-xl font-bold text-petroleum mb-3">
+              Ventas Automáticas 24/7
+            </h3>
+            <p class="text-petroleum-light leading-relaxed">
+              Tu bot nunca duerme. Atiende clientes, responde preguntas y cierra
+              ventas a cualquier hora del día.
+            </p>
+          </div>
+
+          <!-- Feature 2 -->
+          <div
+            class="group p-8 rounded-3xl bg-gray-50 hover:bg-white border border-gray-100 hover:border-energy hover:shadow-xl hover:shadow-energy/10 transition-all duration-300"
+          >
+            <div
+              class="w-14 h-14 rounded-2xl bg-yellow-100 text-energy-dark flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"
+            >
+              <i class="fa-solid fa-qrcode"></i>
+            </div>
+            <h3 class="text-xl font-bold text-petroleum mb-3">
+              Cobros QR Integrados
+            </h3>
+            <p class="text-petroleum-light leading-relaxed">
+              Genera códigos QR al instante. El bot verifica el pago
+              automáticamente sin que tú muevas un dedo.
+            </p>
+          </div>
+
+          <!-- Feature 3 -->
+          <div
+            class="group p-8 rounded-3xl bg-gray-50 hover:bg-white border border-gray-100 hover:border-green-400 hover:shadow-xl hover:shadow-green-400/10 transition-all duration-300"
+          >
+            <div
+              class="w-14 h-14 rounded-2xl bg-green-100 text-green-600 flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"
+            >
+              <i class="fa-solid fa-motorcycle"></i>
+            </div>
+            <h3 class="text-xl font-bold text-petroleum mb-3">
+              Gestión de Delivery
+            </h3>
+            <p class="text-petroleum-light leading-relaxed">
+              Calcula costos de envío según la ubicación del cliente y coordina
+              la entrega de forma eficiente.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it Works -->
+    <section id="how-it-works" class="py-20 bg-gray-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2
+          class="text-3xl md:text-4xl font-extrabold text-center text-petroleum mb-16"
+        >
+          ¿Cómo funciona?
+        </h2>
+
+        <div class="grid md:grid-cols-3 gap-8 relative">
+          <!-- Connector Line (Desktop) -->
+          <div
+            class="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-gradient-to-r from-blue-200 via-yellow-200 to-blue-200 -z-10 transform -translate-y-1/2 rounded-full opacity-50"
+          ></div>
+
+          <!-- Step 1 -->
+          <div
+            class="bg-white p-8 rounded-3xl shadow-lg relative text-center border-t-4 border-kallpa"
+          >
+            <div
+              class="w-12 h-12 bg-kallpa text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto -mt-14 mb-6 shadow-lg border-4 border-gray-50"
+            >
+              1
+            </div>
+            <h3 class="text-xl font-bold mb-2">Configura tu Tienda</h3>
+            <p class="text-petroleum-light text-sm">
+              Sube tus productos, define precios y zonas de cobertura en tu
+              panel administrativo.
+            </p>
+          </div>
+
+          <!-- Step 2 -->
+          <div
+            class="bg-white p-8 rounded-3xl shadow-lg relative text-center border-t-4 border-energy mt-8 md:mt-0"
+          >
+            <div
+              class="w-12 h-12 bg-energy text-petroleum rounded-full flex items-center justify-center text-xl font-bold mx-auto -mt-14 mb-6 shadow-lg border-4 border-gray-50"
+            >
+              2
+            </div>
+            <h3 class="text-xl font-bold mb-2">Comparte tu Bot</h3>
+            <p class="text-petroleum-light text-sm">
+              Envía el link de tu bot a tus clientes o ponlo en tus redes
+              sociales. ¡Hazlo viral!
+            </p>
+          </div>
+
+          <!-- Step 3 -->
+          <div
+            class="bg-white p-8 rounded-3xl shadow-lg relative text-center border-t-4 border-green-500 mt-8 md:mt-0"
+          >
+            <div
+              class="w-12 h-12 bg-green-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto -mt-14 mb-6 shadow-lg border-4 border-gray-50"
+            >
+              3
+            </div>
+            <h3 class="text-xl font-bold mb-2">Recibe Ventas</h3>
+            <p class="text-petroleum-light text-sm">
+              Observa cómo llegan los pedidos pagados directamente a tu WhatsApp
+              o Panel.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="py-20 relative overflow-hidden">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="text-center mb-16">
+          <h2 class="text-3xl md:text-4xl font-extrabold text-petroleum mb-4">
+            Planes Simples
+          </h2>
+          <p class="text-lg text-petroleum-light">
+            Elige el plan que mejor se adapte a tu crecimiento.
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <!-- Basic Plan -->
+          <div
+            class="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm hover:shadow-lg transition-all"
+          >
+            <h3 class="text-xl font-bold text-petroleum">Emprendedor</h3>
+            <div class="my-4">
+              <span class="text-4xl font-extrabold text-petroleum">Bs 30</span>
+              <span class="text-petroleum-light">/mes</span>
+            </div>
+            <p class="text-petroleum-light text-sm mb-6">
+              Perfecto para negocios que recién empiezan.
+            </p>
+            <ul class="space-y-4 mb-8">
+              <li class="flex items-center text-sm text-petroleum-light">
+                <i class="fa-solid fa-check text-green-500 mr-3"></i> Hasta 50
+                productos
+              </li>
+              <li class="flex items-center text-sm text-petroleum-light">
+                <i class="fa-solid fa-check text-green-500 mr-3"></i> Cobros QR
+                manuales
+              </li>
+              <li class="flex items-center text-sm text-petroleum-light">
+                <i class="fa-solid fa-check text-green-500 mr-3"></i> Soporte
+                8/5
+              </li>
+            </ul>
+            <a
+              href="#"
+              class="block w-full py-3 text-center rounded-xl bg-gray-100 text-petroleum font-bold hover:bg-energy hover:text-white transition-all"
+              >Empezar</a
+            >
+          </div>
+
+          <!-- Pro Plan (Highlighted) -->
+          <div
+            class="bg-petroleum p-8 rounded-3xl border border-petroleum shadow-2xl transform md:-translate-y-4 relative"
+          >
+            <div
+              class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-kallpa to-blue-400 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wide"
+            >
+              Más Popular
+            </div>
+            <h3 class="text-xl font-bold text-white">Negocio Pro</h3>
+            <div class="my-4">
+              <span class="text-4xl font-extrabold text-white">Bs 70</span>
+              <span class="text-gray-400">/mes</span>
+            </div>
+            <p class="text-gray-400 text-sm mb-6">
+              Para tiendas que necesitan automatización total.
+            </p>
+            <ul class="space-y-4 mb-8">
+              <li class="flex items-center text-sm text-white">
+                <i class="fa-solid fa-check text-kallpa-light mr-3"></i>
+                Productos ilimitados
+              </li>
+              <li class="flex items-center text-sm text-white">
+                <i class="fa-solid fa-check text-kallpa-light mr-3"></i> Cobros
+                QR Automáticos
+              </li>
+              <li class="flex items-center text-sm text-white">
+                <i class="fa-solid fa-check text-kallpa-light mr-3"></i> Gestión
+                de Inventario
+              </li>
+              <li class="flex items-center text-sm text-white">
+                <i class="fa-solid fa-check text-kallpa-light mr-3"></i> Soporte
+                Prioritario
+              </li>
+            </ul>
+            <a
+              href="#"
+              class="block w-full py-3 text-center rounded-xl bg-kallpa text-white font-bold hover:bg-kallpa-light transition-colors shadow-lg shadow-kallpa/50"
+              >Obtener Pro</a
+            >
+          </div>
+
+          <!-- Enterprise Plan -->
+          <div
+            class="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm hover:shadow-lg transition-all"
+          >
+            <h3 class="text-xl font-bold text-petroleum">Empresarial</h3>
+            <div class="my-4">
+              <span class="text-4xl font-extrabold text-petroleum">Custom</span>
+            </div>
+            <p class="text-petroleum-light text-sm mb-6">
+              Soluciones a medida para grandes volúmenes.
+            </p>
+            <ul class="space-y-4 mb-8">
+              <li class="flex items-center text-sm text-petroleum-light">
+                <i class="fa-solid fa-check text-green-500 mr-3"></i> Todo
+                ilimitado
+              </li>
+              <li class="flex items-center text-sm text-petroleum-light">
+                <i class="fa-solid fa-check text-green-500 mr-3"></i>
+                Integración CRM
+              </li>
+              <li class="flex items-center text-sm text-petroleum-light">
+                <i class="fa-solid fa-check text-green-500 mr-3"></i> Desarrollo
+                a medida
+              </li>
+            </ul>
+            <a
+              href="#"
+              class="block w-full py-3 text-center rounded-xl bg-gray-100 text-petroleum font-bold hover:bg-gray-200 transition-colors"
+              >Contactar</a
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-petroleum text-slate-300 py-12 border-t border-gray-800">
+      <div
+        class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-4 gap-8"
+      >
+        <div class="col-span-1 md:col-span-2">
+          <div class="flex items-center gap-2 mb-4">
+            <div
+              class="w-8 h-8 bg-kallpa rounded-lg flex items-center justify-center text-white font-bold"
+            >
+              K
+            </div>
+            <span class="font-bold text-xl text-white"
+              >Kallpa<span class="text-kallpa">AI</span></span
+            >
+          </div>
+          <p class="text-sm opacity-70 max-w-xs">
+            Empoderando negocios en Bolivia y latinoamérica con tecnología de
+            punta accesible para todos.
+          </p>
+          <div class="flex gap-4 mt-6">
+            <a
+              href="#"
+              class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-kallpa transition-colors"
+              ><i class="fa-brands fa-facebook-f"></i
+            ></a>
+            <a
+              href="#"
+              class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-kallpa transition-colors"
+              ><i class="fa-brands fa-instagram"></i
+            ></a>
+            <a
+              href="#"
+              class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-kallpa transition-colors"
+              ><i class="fa-brands fa-twitter"></i
+            ></a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-white mb-4">Producto</h4>
+          <ul class="space-y-2 text-sm">
+            <li>
+              <a href="#" class="hover:text-kallpa transition-colors"
+                >Funcionalidades</a
+              >
+            </li>
+            <li>
+              <a href="#" class="hover:text-kallpa transition-colors"
+                >Precios</a
+              >
+            </li>
+            <li>
+              <a href="#" class="hover:text-kallpa transition-colors"
+                >Casos de Uso</a
+              >
+            </li>
+            <li>
+              <a href="#" class="hover:text-kallpa transition-colors">Demo</a>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-white mb-4">Legal</h4>
+          <ul class="space-y-2 text-sm">
+            <li>
+              <a href="#" class="hover:text-kallpa transition-colors"
+                >Términos</a
+              >
+            </li>
+            <li>
+              <a href="#" class="hover:text-kallpa transition-colors"
+                >Privacidad</a
+              >
+            </li>
+            <li>
+              <a href="#" class="hover:text-kallpa transition-colors"
+                >Contacto</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div
+        class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-gray-800 text-center text-sm opacity-50"
+      >
+        &copy; 2024 Kallpa Sales AI. Hecho con ❤️ en Bolivia.
+      </div>
+    </footer>
+
+    <!-- Mobile Menu Script -->
+    <script>
+      const btn = document.getElementById("mobile-menu-btn");
+      const menu = document.getElementById("mobile-menu");
+
+      btn.addEventListener("click", () => {
+        menu.classList.toggle("hidden");
+      });
+    </script>
+  </body>
+</html>

@@ -1,7 +1,8 @@
 from openai import OpenAI
 import json
-from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, SYSTEM_PROMPT
-from db.queries import get_memory, save_memory
+from src.config.settings import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
+from src.config.prompts import SYSTEM_PROMPT
+from src.database.repositories import get_memory, save_memory
 
 client = OpenAI(
     api_key=DEEPSEEK_API_KEY,

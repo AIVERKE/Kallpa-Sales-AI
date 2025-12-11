@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iniciar Sesión - Kallpa Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Outfit", "sans-serif"] },
+            colors: {
+              kallpa: { DEFAULT: "#1A73E8", dark: "#1557b0" },
+              petroleum: { DEFAULT: "#333333" },
+            },
+          },
+        },
+      };
+    </script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-50 flex items-center justify-center h-screen">
+    <div
+      class="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 border border-gray-100"
+    >
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-extrabold text-petroleum">Iniciar Sesión</h1>
+        <p class="text-gray-500 mt-2">Bienvenido de nuevo a Kallpa AI</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div
+        class="mb-4 p-4 rounded-lg text-sm font-medium 
+                {{ 'bg-red-100 text-red-700' if category == 'danger' else 'bg-green-100 text-green-700' }}"
+      >
+        {{ message }}
+      </div>
+      {% endfor %} {% endif %} {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.login') }}">
+        <div class="mb-4">
+          <label
+            for="email"
+            class="block text-sm font-medium text-gray-700 mb-1"
+            >Correo Electrónico</label
+          >
+          <input
+            type="email"
+            name="email"
+            required
+            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-kallpa focus:ring-2 focus:ring-kallpa/20 outline-none transition-all"
+          />
+        </div>
+        <div class="mb-6">
+          <label
+            for="password"
+            class="block text-sm font-medium text-gray-700 mb-1"
+            >Contraseña</label
+          >
+          <input
+            type="password"
+            name="password"
+            required
+            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-kallpa focus:ring-2 focus:ring-kallpa/20 outline-none transition-all"
+          />
+        </div>
+        <button
+          type="submit"
+          class="w-full py-3 rounded-xl bg-kallpa text-white font-bold hover:bg-kallpa-dark transition-colors shadow-lg shadow-kallpa/30"
+        >
+          Entrar
+        </button>
+      </form>
+
+      <div class="mt-6 text-center text-sm text-gray-500">
+        ¿No tienes cuenta?
+        <a
+          href="{{ url_for('auth.register') }}"
+          class="text-kallpa font-bold hover:underline"
+          >Regístrate</a
+        >
+      </div>
+      <div class="mt-4 text-center">
+        <a
+          href="{{ url_for('home') }}"
+          class="text-gray-400 text-xs hover:text-gray-600"
+          >← Volver al inicio</a
+        >
+      </div>
+    </div>
+  </body>
+</html>
