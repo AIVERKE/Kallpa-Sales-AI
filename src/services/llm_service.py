@@ -11,7 +11,10 @@ client = OpenAI(
 async def get_ai_response(
     message: str,
     customer: Customer,
-    session: ChatSession
+    session: ChatSession,
+    product_context: str = "",
+    delivery_context: str = "",
+    history: list = []
 ) -> str:
     """
     Generates a response using the LLM, injecting customer memory and context.
@@ -23,13 +26,33 @@ async def get_ai_response(
     ID Cliente: {customer.id}
     Estado: {customer.status}
     Contexto Sesión: {json.dumps(session.context_data, ensure_ascii=False)}
+    
+    INVENTARIO DISPONIBLE:
+    {product_context}
+    
+    ZONAS DE DELIVERY (Para calcular envío):
+    {delivery_context}
+    
+    INSTRUCCIONES: 
+    1. Para VENDER: Usa solo productos del INVENTARIO.
+    2. Para CREAR PEDIDO: Si el usuario confirma, usa <crear_pedido>[JSON]</crear_pedido>.
+    3. Para ENVÍO: 
+       - Pregunta la zona/barrio (ej: Sopocachi, Satélite).
+       - Busca la zona en la lista 'ZONAS DE DELIVERY'.
+       - Si encuentras coincidencia, GENERA: <asignar_zona>ID_ZONA</asignar_zona>.
+       - Si el usuario dice "voy a recoger", usa ID: -1 (<asignar_zona>-1</asignar_zona>).
     """
 
     messages = [
         {"role": "system", "content": settings.SYSTEM_PROMPT},
         {"role": "assistant", "content": f"Memoria del sistema:\n{memory_context}"},
-        {"role": "user", "content": message},
     ]
+    
+    # Inject History
+    messages.extend(history)
+    
+    # Current User Message
+    messages.append({"role": "user", "content": message})
 
     try:
         # 2. Call LLM
@@ -72,6 +95,17 @@ def clean_response(response_text: str) -> str:
     if "<memoria>" in output:
         parts = output.split("<memoria>")
         output = parts[0] + (parts[1].split("</memoria>")[1] if "</memoria>" in parts[1] else "")
+
+    # Remove <crear_pedido> block
+    if "<crear_pedido>" in output:
+        parts = output.split("<crear_pedido>")
+        # Keep text before and after
+        output = parts[0] + (parts[1].split("</crear_pedido>")[1] if "</crear_pedido>" in parts[1] else "")
+
+    # Remove <asignar_zona> block
+    if "<asignar_zona>" in output:
+        parts = output.split("<asignar_zona>")
+        output = parts[0] + (parts[1].split("</asignar_zona>")[1] if "</asignar_zona>" in parts[1] else "")
 
     # Remove <qr> tag
     output = output.replace("<qr>", "").replace("</qr>", "")

@@ -5,20 +5,24 @@ import argparse
 # Add project root to sys.path to ensure absolute imports work if run from inside src
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.config.settings import TELEGRAM_BOT_TOKEN
-from src.bot.telegram_bot import create_bot_polling
-from src.web.app import app
+import uvicorn
+from src.core.config import settings
+from src.infrastructure.telegram.bot import build_application
+from src.infrastructure.web.main import app
 
 def run_web():
-    print("🚀 Starting Flask Web App...")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    print("🚀 Starting FastAPI Web App...")
+    uvicorn.run(app, host="0.0.0.0", port=5000)
 
 def run_bot():
     print("🤖 Starting Telegram Bot (Polling)...")
-    if not TELEGRAM_BOT_TOKEN:
-        print("Error: TELEGRAM_TOKEN not found in environment variables.")
+    if not settings.TELEGRAM_BOT_TOKEN:
+        print("Error: TELEGRAM_BOT_TOKEN not found in environment variables.")
         return
-    create_bot_polling(TELEGRAM_BOT_TOKEN)
+    
+    app_bot = build_application()
+    print("✅ Bot is running! Press Ctrl+C to stop.")
+    app_bot.run_polling()
 
 def main():
     parser = argparse.ArgumentParser(description="Kallpa Sales AI Entry Point")

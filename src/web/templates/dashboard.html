@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Tablero - Kallpa AI{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- HEADER -->
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                Tablero Principal
+            </h2>
+        </div>
+        <div class="mt-4 flex md:ml-4 md:mt-0">
+            <button type="button" class="ml-3 inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                <span class="mr-2">📢</span> Nuevo Anuncio
+            </button>
+        </div>
+    </div>
+
+    <!-- METRICS CARDS -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <!-- Card 1: Sales -->
+        <div class="overflow-hidden rounded-lg bg-white shadow">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
+                        <span class="text-2xl text-white">💰</span>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500">Ventas Hoy</dt>
+                            <dd>
+                                <div class="text-lg font-medium text-gray-900">{{ metrics.sales_today }} Bs</div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3">
+                <div class="text-sm">
+                    <a href="/orders" class="font-medium text-indigo-700 hover:text-indigo-900">Ver todas</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Pending Orders -->
+        <div class="overflow-hidden rounded-lg bg-white shadow">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-orange-500 rounded-md p-3">
+                        <span class="text-2xl text-white">📦</span>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500">Por Enviar</dt>
+                            <dd>
+                                <div class="text-lg font-medium text-gray-900">{{ metrics.pending_orders }} Pedidos</div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3">
+                <div class="text-sm">
+                    <a href="/orders?status=paid" class="font-medium text-indigo-700 hover:text-indigo-900">Gestionar envíos</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Stock Alerts -->
+        <div class="overflow-hidden rounded-lg bg-white shadow">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-red-500 rounded-md p-3">
+                        <span class="text-2xl text-white">⚠️</span>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="truncate text-sm font-medium text-gray-500">Stock Crítico</dt>
+                            <dd>
+                                <div class="text-lg font-medium text-gray-900">{{ metrics.low_stock }} Productos</div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3">
+                <div class="text-sm">
+                    <a href="/inventory" class="font-medium text-indigo-700 hover:text-indigo-900">Reponer stock</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACTIVITY FEED -->
+    <div class="overflow-hidden bg-white shadow sm:rounded-md">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-base font-semibold leading-6 text-gray-900">Actividad Reciente</h3>
+        </div>
+        <ul role="list" class="divide-y divide-gray-200">
+            {% for notif in notifications %}
+            <li>
+                <div class="block hover:bg-gray-50">
+                    <div class="px-4 py-4 sm:px-6">
+                        <div class="flex items-center justify-between">
+                            <p class="truncate text-sm font-medium text-indigo-600">
+                                {% if notif.type == 'sale' %}💰 Nueva Venta{% elif notif.type == 'alert' %}🚨 Alerta{% else %}📢 Info{% endif %}
+                            </p>
+                            <div class="ml-2 flex flex-shrink-0">
+                                <p class="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800">
+                                    {{ notif.created_at.strftime('%H:%M') }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-2 sm:flex sm:justify-between">
+                            <div class="sm:flex">
+                                <p class="flex items-center text-sm text-gray-500">
+                                    {{ notif.message }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            {% else %}
+            <li class="px-4 py-8 text-center text-gray-500 text-sm">
+                No hay actividad reciente. Tu tienda está tranquila. 😴
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+</div>
+{% endblock %}

@@ -29,21 +29,52 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
 
         # Check for special flags
-        if "[QR_CODE_REQUEST]" in response_text:
+        if "[QR_DYNAMIC:" in response_text:
+            # Extract URL
+            import re
+            match = re.search(r"\[QR_DYNAMIC:(.*?)\]", response_text)
+            if match:
+                qr_url = match.group(1)
+                clean_text = response_text.replace(match.group(0), "").strip()
+                
+                if clean_text:
+                    await update.message.reply_text(clean_text)
+                
+                try:
+                    # In production, this would download the URL or use a File ID.
+                    # For local dev, if it's a file path, open it. 
+                    # If it interprets as external URL, Telegram might need 'send_photo(url)'
+                    # We assume it's a URL or path accessible server-side.
+                    await update.message.reply_photo(photo=qr_url)
+                except Exception as e:
+                    await update.message.reply_text("[No se pudo cargar la imagen del QR]")
+                    print(f"Error loading QR {qr_url}: {e}")
+            else:
+                await update.message.reply_text(response_text)
+                
+        elif "[QR_CODE_REQUEST]" in response_text:
+             # Fallback for legacy static QR
             clean_text = response_text.replace("[QR_CODE_REQUEST]", "").strip()
             if clean_text:
                 await update.message.reply_text(clean_text)
 
-            # Send QR Image (Assuming image.png exists in root)
             try:
                 await update.message.reply_photo(photo=open("image.png", "rb"))
             except Exception as e:
-                await update.message.reply_text("[No se pudo cargar el código QR]")
-                print(f"Error loading QR: {e}")
+                pass
         else:
             await update.message.reply_text(response_text)
 
         # We only need one session, so break after usage
+        break
+
+async def reset_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    
+    async for session in get_session():
+        from src.services.chat_service import reset_chat_session
+        response = await reset_chat_session(session, user_id)
+        await update.message.reply_text(response)
         break
 
 def build_application() -> Application:
@@ -57,9 +88,33 @@ def build_application() -> Application:
     app = builder.build()
 
     app.add_handler(CommandHandler("start", start_command))
+    app.add_handler(CommandHandler("reset", reset_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
+    app.add_handler(MessageHandler(filters.PHOTO, handle_photo_message))
 
     return app
+
+async def handle_photo_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    
+    # Get highest resolution photo
+    photo_file = await update.message.photo[-1].get_file()
+    
+    # Telegram File URL (Requires standard API URL construction if not provided by library directly usually)
+    # PTB provides file_path but it needs token insertion usually or we let GPT download it if public.
+    # Actually PTB Download is protected. We might need to download it to a buffer or rely on PTB's 'file_path' if the LLM client can access it (Unlikely without auth).
+    # Ideally: Download -> Upload to LLM or passing Base64.
+    # For now, we assume we pass the URL provided by Telegram (which expires).
+    # Simplified: We will say "Recibido" if we can't fully pipe the URL without a public server.
+    # BUT, let's try to get the link.
+    
+    file_url = photo_file.file_path
+    
+    async for session in get_session():
+        from src.services.chat_service import process_receipt
+        response_text = await process_receipt(session, user_id, file_url)
+        await update.message.reply_text(response_text)
+        break
 
 async def get_ptb_application() -> Application:
     global _ptb_application

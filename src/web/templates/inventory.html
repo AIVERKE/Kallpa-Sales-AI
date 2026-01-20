@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Inventario - Kallpa AI{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <div class="md:flex md:items-center md:justify-between">
+        <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+            Gestión de Inventario
+        </h2>
+        <div class="mt-4 flex md:ml-4 md:mt-0">
+            <button type="button" class="ml-3 inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                + Nuevo Producto
+            </button>
+        </div>
+    </div>
+
+    <!-- PRODUCTS LIST -->
+    <div class="grid grid-cols-1 gap-6">
+        {% for product in products %}
+        <div class="bg-white shadow sm:rounded-lg overflow-hidden border border-gray-200">
+            <!-- Product Header -->
+            <div class="px-4 py-5 sm:px-6 bg-gray-50 flex justify-between items-center">
+                <div class="flex items-center">
+                    <div class="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500 font-bold">
+                        {{ product.name[:2].upper() }}
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900">{{ product.name }}</h3>
+                        <p class="mt-1 max-w-2xl text-sm text-gray-500">{{ product.description or 'Sin descripción' }}</p>
+                    </div>
+                </div>
+                <!-- Status Toggle Form -->
+                <form action="/inventory/toggle-product" method="POST">
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <button type="submit" 
+                        class="inline-flex items-center rounded-full px-3 py-0.5 text-sm font-medium 
+                        {% if product.status == 'active' %}bg-green-100 text-green-800 hover:bg-green-200{% else %}bg-gray-100 text-gray-800 hover:bg-gray-200{% endif %}">
+                        {{ product.status|upper }}
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Variants Table -->
+            <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
+                <dl class="sm:divide-y sm:divide-gray-200">
+                    <div class="py-2">
+                        <table class="min-w-full divide-y divide-gray-300">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="py-2 pl-4 pr-3 text-left text-xs font-semibold text-gray-500 uppercase">SKU</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Variante (Talla/Color)</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Stock Actual</th>
+                                    <th scope="col" class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 bg-white">
+                                {% for variant in product.variants %}
+                                <tr>
+                                    <td class="whitespace-nowrap py-3 pl-4 pr-3 text-sm font-medium text-gray-900">{{ variant.sku }}</td>
+                                    <td class="whitespace-nowrap px-3 py-3 text-sm text-gray-600">
+                                        {{ variant.size }} / {{ variant.color }}
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-3 text-sm font-bold {% if variant.stock_quantity < 5 %}text-red-600{% else %}text-gray-900{% endif %}">
+                                        {{ variant.stock_quantity }} u.
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-3 text-sm text-gray-500">
+                                        <!-- Inline Stock Edit Form -->
+                                        <form action="/inventory/update-stock" method="POST" class="flex items-center gap-2">
+                                            <input type="hidden" name="variant_id" value="{{ variant.id }}">
+                                            <input type="number" name="new_stock" value="{{ variant.stock_quantity }}" min="0" 
+                                                class="block w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-xs">
+                                            <button type="submit" class="text-indigo-600 hover:text-indigo-900 text-xs font-medium border border-indigo-200 px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100">
+                                                Actualizar
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </dl>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

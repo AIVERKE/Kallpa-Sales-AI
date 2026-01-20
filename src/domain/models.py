@@ -1,7 +1,8 @@
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
+from decimal import Decimal
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column, String, Text, Numeric, Integer, Boolean, BigInteger, JSON, Enum
+from sqlalchemy import Column, String, Text, Numeric, Integer, Boolean, BigInteger, JSON, Enum, func, DateTime
 import enum
 
 # Enums
@@ -33,10 +34,15 @@ class Store(SQLModel, table=True):
     slug: str = Field(sa_column=Column(String(100), unique=True, nullable=False))
     bot_token: Optional[str] = Field(default=None, sa_column=Column(String(255)))
     currency: str = Field(default="BOB", sa_column=Column(String(3)))
+    qr_image_url: Optional[str] = Field(default=None, sa_column=Column(Text))
+    owner_telegram_id: Optional[int] = Field(default=None, sa_column=Column(BigInteger))
     settings: Optional[dict] = Field(default={}, sa_column=Column(JSON))
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_column=Column(DateTime(timezone=True)))
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), onupdate=func.now())
+    )
 
     users: List["User"] = Relationship(back_populates="store")
     products: List["Product"] = Relationship(back_populates="store")
@@ -52,8 +58,11 @@ class User(SQLModel, table=True):
     password_hash: str = Field(sa_column=Column(String(255), nullable=False))
     role: UserRole = Field(default=UserRole.store_owner)
     phone: Optional[str] = Field(default=None, sa_column=Column(String(20)))
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_column=Column(DateTime(timezone=True)))
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), onupdate=func.now())
+    )
 
     store: Optional[Store] = Relationship(back_populates="users")
 
@@ -63,7 +72,7 @@ class DeliveryZone(SQLModel, table=True):
     id: Optional[int] = Field(default=None, sa_column=Column(BigInteger, primary_key=True, autoincrement=True))
     store_id: int = Field(foreign_key="stores.id")
     name: str = Field(sa_column=Column(String(100), nullable=False))
-    price: float = Field(default=0, sa_column=Column(Numeric(12, 2)))
+    price: Decimal = Field(default=0, sa_column=Column(Numeric(12, 2)))
     estimated_time: Optional[str] = Field(default=None, sa_column=Column(String(50)))
     is_active: bool = Field(default=True)
 
@@ -74,11 +83,15 @@ class Product(SQLModel, table=True):
     store_id: int = Field(foreign_key="stores.id")
     name: str = Field(sa_column=Column(String(200), nullable=False))
     description: Optional[str] = Field(default=None, sa_column=Column(Text))
-    base_price: float = Field(sa_column=Column(Numeric(12, 2), nullable=False))
+    base_price: Decimal = Field(sa_column=Column(Numeric(12, 2), nullable=False))
     category: Optional[str] = Field(default=None, sa_column=Column(String(100)))
     status: str = Field(default="active", sa_column=Column(String(20)))
     image_url: Optional[str] = Field(default=None, sa_column=Column(Text))
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_column=Column(DateTime(timezone=True)))
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), onupdate=func.now())
+    )
 
     store: Store = Relationship(back_populates="products")
     variants: List["ProductVariant"] = Relationship(back_populates="product")
@@ -91,9 +104,9 @@ class ProductVariant(SQLModel, table=True):
     sku: Optional[str] = Field(default=None, sa_column=Column(String(50)))
     size: Optional[str] = Field(default=None, sa_column=Column(String(50)))
     color: Optional[str] = Field(default=None, sa_column=Column(String(50)))
-    additional_price: float = Field(default=0, sa_column=Column(Numeric(12, 2)))
+    additional_price: Decimal = Field(default=0, sa_column=Column(Numeric(12, 2)))
     stock_quantity: int = Field(default=0)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_column=Column(DateTime(timezone=True)))
 
     product: Product = Relationship(back_populates="variants")
 
@@ -104,7 +117,7 @@ class TelegramIdentity(SQLModel, table=True):
     first_name: Optional[str] = Field(default=None, sa_column=Column(String(100)))
     username: Optional[str] = Field(default=None, sa_column=Column(String(100)))
     language_code: Optional[str] = Field(default=None, sa_column=Column(String(10)))
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_column=Column(DateTime(timezone=True)))
 
 # 7. CLIENTES
 class Customer(SQLModel, table=True):
@@ -118,12 +131,13 @@ class Customer(SQLModel, table=True):
     full_name: Optional[str] = Field(default=None, sa_column=Column(String(200)))
     address: Optional[str] = Field(default=None, sa_column=Column(Text))
 
-    ltv: float = Field(default=0, sa_column=Column(Numeric(12, 2)))
+    ltv: Decimal = Field(default=0, sa_column=Column(Numeric(12, 2)))
     status: str = Field(default="lead", sa_column=Column(String(20)))
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_column=Column(DateTime(timezone=True)))
 
     store: Store = Relationship(back_populates="customers")
     telegram_identity: Optional[TelegramIdentity] = Relationship()
+    orders: List["Order"] = Relationship(back_populates="customer")
 
 # 8. SESIONES DE CHAT
 class ChatSession(SQLModel, table=True):
@@ -136,7 +150,10 @@ class ChatSession(SQLModel, table=True):
     current_step: Optional[str] = Field(default=None, sa_column=Column(String(50)))
     context_data: Optional[dict] = Field(default={}, sa_column=Column(JSON))
 
-    last_interaction_at: datetime = Field(default_factory=datetime.utcnow)
+    last_interaction_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), onupdate=func.now())
+    )
     is_active: bool = Field(default=True)
 
 # 9. PEDIDOS
@@ -149,9 +166,9 @@ class Order(SQLModel, table=True):
     status: OrderStatus = Field(default=OrderStatus.draft)
     payment_method: Optional[PaymentMethod] = Field(default=None)
 
-    subtotal: float = Field(default=0, sa_column=Column(Numeric(12, 2), nullable=False))
-    delivery_cost: float = Field(default=0, sa_column=Column(Numeric(12, 2)))
-    total: float = Field(default=0, sa_column=Column(Numeric(12, 2), nullable=False))
+    subtotal: Decimal = Field(default=0, sa_column=Column(Numeric(12, 2), nullable=False))
+    delivery_cost: Decimal = Field(default=0, sa_column=Column(Numeric(12, 2)))
+    total: Decimal = Field(default=0, sa_column=Column(Numeric(12, 2), nullable=False))
 
     delivery_zone_id: Optional[int] = Field(default=None, foreign_key="delivery_zones.id")
     shipping_address: Optional[str] = Field(default=None, sa_column=Column(Text))
@@ -159,10 +176,14 @@ class Order(SQLModel, table=True):
     payment_proof_url: Optional[str] = Field(default=None, sa_column=Column(Text))
     notes: Optional[str] = Field(default=None, sa_column=Column(Text))
 
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_column=Column(DateTime(timezone=True)))
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), onupdate=func.now())
+    )
 
     items: List["OrderItem"] = Relationship(back_populates="order")
+    customer: Customer = Relationship(back_populates="orders")
 
 # 10. DETALLE DEL PEDIDO
 class OrderItem(SQLModel, table=True):
@@ -174,8 +195,8 @@ class OrderItem(SQLModel, table=True):
     product_name: Optional[str] = Field(default=None, sa_column=Column(String(200)))
     variant_name: Optional[str] = Field(default=None, sa_column=Column(String(100)))
     quantity: int = Field(nullable=False)
-    unit_price: float = Field(sa_column=Column(Numeric(12, 2), nullable=False))
-    total_line: float = Field(sa_column=Column(Numeric(12, 2), nullable=False))
+    unit_price: Decimal = Field(sa_column=Column(Numeric(12, 2), nullable=False))
+    total_line: Decimal = Field(sa_column=Column(Numeric(12, 2), nullable=False))
 
     order: Order = Relationship(back_populates="items")
 
@@ -191,4 +212,17 @@ class AiLog(SQLModel, table=True):
     user_message: Optional[str] = Field(default=None, sa_column=Column(Text))
     ai_response: Optional[str] = Field(default=None, sa_column=Column(Text))
     sentiment_score: Optional[float] = Field(default=None, sa_column=Column(Numeric(3, 2)))
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_column=Column(DateTime(timezone=True)))
+
+# 12. NOTIFICACIONES (Dashboard/System)
+class Notification(SQLModel, table=True):
+    __tablename__ = "notifications"
+    id: Optional[int] = Field(default=None, sa_column=Column(BigInteger, primary_key=True, autoincrement=True))
+    store_id: int = Field(foreign_key="stores.id")
+    order_id: Optional[int] = Field(default=None, foreign_key="orders.id")
+    
+    type: str = Field(sa_column=Column(String(50))) # sale, alert, stock_low
+    message: str = Field(sa_column=Column(Text))
+    is_read: bool = Field(default=False)
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_column=Column(DateTime(timezone=True)))

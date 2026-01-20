@@ -1,6 +1,6 @@
 from sqlmodel import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.domain.models import TelegramIdentity, Customer, ChatSession, Store, AiLog
+from src.domain.models import TelegramIdentity, Customer, ChatSession, Store, AiLog, Order
 from src.services.llm_service import get_ai_response, parse_memory_tags, clean_response
 
 async def process_telegram_message(
@@ -64,8 +64,44 @@ async def process_telegram_message(
         await db.commit()
         await db.refresh(session)
 
-    # 4. Call LLM Service
-    raw_response = await get_ai_response(text, customer, session)
+    # 4a. Get Chat History (Last 6 messages)
+    history_logs = await db.execute(
+        select(AiLog)
+        .where(AiLog.chat_session_id == session.id)
+        .order_by(AiLog.created_at.desc())
+        .limit(6)
+    )
+    logs = history_logs.scalars().all()
+    # Reorder to chronological (oldest -> newest)
+    logs = reversed(logs)
+    
+    history_messages = []
+    for log in logs:
+        # User message
+        history_messages.append({"role": "user", "content": log.user_message})
+        # AI response (clean only to avoid re-injecting tags logic? OR raw? 
+        # Typically we want clean text for context, but maybe raw for logic continuity. 
+        # Let's use clean text to avoid confusing the LLM with old tags)
+        
+        # Actually, for continuity, raw might be better if we want it to remember it made an order.
+        # But 'clean_response' removes system tags, which is safer visual context.
+        # Let's use raw_response but handle the output carefully.
+        # Ideally, we store "clean_response" in DB too.
+        # Let's use the stored ai_response for now.
+        history_messages.append({"role": "assistant", "content": log.ai_response})
+
+    # 4b. Search Products & Zones
+    from src.services.product_service import ProductService
+    from src.services.delivery_service import DeliveryService
+    
+    products_found = await ProductService.search_products_by_text(db, text, store_id)
+    product_context = ProductService.format_products_for_llm(products_found)
+    
+    available_zones = await DeliveryService.get_available_zones(db, store_id)
+    delivery_context = DeliveryService.format_zones_for_llm(available_zones)
+
+    # 5. Call LLM Service
+    raw_response = await get_ai_response(text, customer, session, product_context, delivery_context, history=history_messages)
 
     # 5. Process Tags (<memoria>)
     memory_update = parse_memory_tags(raw_response)
@@ -107,4 +143,146 @@ async def process_telegram_message(
     if "<qr>" in raw_response:
         final_text += " [QR_CODE_REQUEST]"
 
+    # 6. Process Order Creation Tag
+    if "<crear_pedido>" in raw_response:
+        try:
+            import json
+            from src.services.order_service import OrderService
+            
+            # Extract JSON
+            json_str = raw_response.split("<crear_pedido>")[1].split("</crear_pedido>")[0]
+            items_raw = json.loads(json_str)
+            
+            # Resolve SKUs from Attributes if needed
+            items_data = []
+            for item in items_raw:
+                sku = item.get("sku")
+                qty = item.get("cantidad", 1)
+                
+                # Check if we have attributes to fallback
+                if "product_name" in item:
+                    # Try to resolve valid SKU via attributes
+                    variant = await ProductService.find_best_match_variant(
+                         db, 
+                         store_id, 
+                         item["product_name"], 
+                         item.get("color"), 
+                         item.get("size")
+                    )
+                    if variant:
+                        sku = variant.sku # Override hallucinated SKU with real one
+                
+                items_data.append({"sku": sku, "cantidad": qty})
+            
+            # Create Order
+            try:
+                order = await OrderService.create_order(db, store_id, customer.id, items_data)
+                
+                # Success Message Injection
+                final_text += f"\n\n✅ ¡Pedido #{order.id} creado con éxito!\nTotal a Pagar: {order.total} Bs."
+                
+                # Fetch Store QR to display
+                store = await db.get(Store, store_id)
+                if store and store.qr_image_url:
+                    final_text += f"\n\nEscanea el QR para pagar:\n[QR_DYNAMIC:{store.qr_image_url}]"
+                else:
+                    final_text += "\n\n(Solicita el QR de pago al vendedor)"
+                
+            except ValueError as ve:
+                # Stock error or invalid SKU
+                final_text += f"\n\n⚠️ No pudimos procesar tu pedido: {str(ve)}"
+                
+        except Exception as e:
+            print(f"Error creating order: {e}")
+            final_text += "\n\n(Error técnico al generar el pedido, por favor intenta de nuevo)"
+
+    # 7. Process Zone Assignment Tag
+    if "<asignar_zona>" in raw_response:
+        try:
+            zone_id_str = raw_response.split("<asignar_zona>")[1].split("</asignar_zona>")[0]
+            zone_id = int(zone_id_str)
+            
+            # Use most recent active order for this customer
+            # Ideally, we should track 'current_order_id' in session context.
+            # For this prototype, we fetch the last PENDING/DRAFT order.
+            
+            result = await db.execute(
+                select(Order)
+                .where(Order.customer_id == customer.id)
+                .where(Order.status == "draft")
+                .order_by(Order.created_at.desc())
+            )
+            current_order = result.scalars().first()
+            
+            if current_order:
+                updated_order = await OrderService.update_shipping(db, current_order.id, zone_id)
+                 # Success Message Injection
+                final_text += f"\n\n🚚 Envío actualizado. Nuevo Total: {updated_order.total} Bs."
+            else:
+                final_text += "\n\n⚠️ No encontré un pedido activo para asignarle envío."
+
+        except Exception as e:
+            print(f"Error assigning zone: {e}")
+            final_text += "\n\n(Error al calcular envío)"
+
     return final_text
+
+async def process_receipt(
+    db: AsyncSession,
+    telegram_user_id: int,
+    file_url: str,
+    store_id: int = 1
+) -> str:
+    """
+    Processes a receipt image sent by a user.
+    """
+    # Find Customer
+    result = await db.execute(
+        select(Customer)
+        .where(Customer.telegram_id == telegram_user_id)
+        .where(Customer.store_id == store_id)
+    )
+    customer = result.scalars().first()
+    
+    if not customer:
+        return "No estás registrado en nuestra base de datos."
+
+    from src.services.payment_service import PaymentService
+    response_text = await PaymentService.analyze_receipt_image(db, file_url, customer.id)
+    
+    return response_text
+
+async def reset_chat_session(
+    db: AsyncSession,
+    telegram_user_id: int,
+    store_id: int = 1
+) -> str:
+    """
+    Deactivates current session to clear context history.
+    """
+    # Find Customer
+    result = await db.execute(
+        select(Customer)
+        .where(Customer.telegram_id == telegram_user_id)
+        .where(Customer.store_id == store_id)
+    )
+    customer = result.scalars().first()
+    
+    if not customer:
+        return "No tienes una sesión activa para reiniciar."
+
+    # Deactivate all active sessions
+    result = await db.execute(
+        select(ChatSession)
+        .where(ChatSession.customer_id == customer.id)
+        .where(ChatSession.is_active == True)
+    )
+    sessions = result.scalars().all()
+    
+    for session in sessions:
+        session.is_active = False
+        db.add(session)
+        
+    await db.commit()
+    return "🔄 Sesión reiniciada. He olvidado nuestra conversación anterior. ¿En qué puedo ayudarte ahora?"
+
