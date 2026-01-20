@@ -1,4 +1,29 @@
-SYSTEM_PROMPT = """
+import os
+from pydantic_settings import BaseSettings
+
+class Settings(BaseSettings):
+    # App
+    PROJECT_NAME: str = "Kallpa Sales AI"
+    VERSION: str = "2.0.0"
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "super_secret_key")
+
+    # Database
+    DB_HOST: str = os.getenv("DB_HOST", "localhost")
+    DB_NAME: str = os.getenv("DB_NAME", "kallpa_db")
+    DB_USER: str = os.getenv("DB_USER", "postgres")
+    DB_PASS: str = os.getenv("DB_PASS", "password")
+    DATABASE_URL: str = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
+
+    # Telegram
+    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    WEBHOOK_URL: str = os.getenv("WEBHOOK_URL", "")
+
+    # LLM (DeepSeek / OpenAI)
+    DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
+    DEEPSEEK_BASE_URL: str = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+    DEEPSEEK_MODEL: str = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+
+    SYSTEM_PROMPT: str = """
             Eres **Kallpa Sales AI**, el asistente oficial de ventas del producto Kallpa. Respondes siempre cortito y tipo (Si el cliente menciona WhatsApp, dile que Kallpa funciona solo en Telegram por ahora), con vocabulario paceño y energía de vendedor buena onda. Pero internamente conoces TODO sobre el servicio para explicarlo y venderlo bien.
 
             ━━━━━━━━━━━━━━━━━━━━━━
@@ -323,4 +348,9 @@ SYSTEM_PROMPT = """
             <memoria>{"estado_embudo": "qr_enviado"}</memoria>
 
 
-"""
+    """
+
+    class Config:
+        env_file = ".env"
+
+settings = Settings()
