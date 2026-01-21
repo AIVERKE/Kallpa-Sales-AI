@@ -1,7 +1,7 @@
 from typing import List, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
-from src.domain.models import Order, OrderItem, ProductVariant, OrderStatus
+from src.domain.models import Order, OrderItem, ProductVariant, OrderStatus, Product
 
 class OrderService:
     @staticmethod
@@ -44,7 +44,7 @@ class OrderService:
             # Ideally we fetch product too. For now let's rely on relationship or simple data.
             # Variant table has price override, but we need base price from product.
             # Let's fetch product to be safe.
-            product = await db.get(variant.product.__class__, variant.product_id)
+            product = await db.get(Product, variant.product_id)
             
             unit_price = product.base_price + variant.additional_price
             total_line = unit_price * qty

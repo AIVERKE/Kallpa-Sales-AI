@@ -38,32 +38,33 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
                 clean_text = response_text.replace(match.group(0), "").strip()
                 
                 if clean_text:
-                    await update.message.reply_text(clean_text)
+                    await update.message.reply_text(clean_text, parse_mode="Markdown")
                 
                 try:
-                    # In production, this would download the URL or use a File ID.
-                    # For local dev, if it's a file path, open it. 
-                    # If it interprets as external URL, Telegram might need 'send_photo(url)'
-                    # We assume it's a URL or path accessible server-side.
                     await update.message.reply_photo(photo=qr_url)
                 except Exception as e:
                     await update.message.reply_text("[No se pudo cargar la imagen del QR]")
                     print(f"Error loading QR {qr_url}: {e}")
             else:
-                await update.message.reply_text(response_text)
+                await update.message.reply_text(response_text, parse_mode="Markdown")
                 
         elif "[QR_CODE_REQUEST]" in response_text:
              # Fallback for legacy static QR
             clean_text = response_text.replace("[QR_CODE_REQUEST]", "").strip()
             if clean_text:
-                await update.message.reply_text(clean_text)
+                await update.message.reply_text(clean_text, parse_mode="Markdown")
 
             try:
                 await update.message.reply_photo(photo=open("image.png", "rb"))
             except Exception as e:
                 pass
         else:
-            await update.message.reply_text(response_text)
+            try:
+                await update.message.reply_text(response_text, parse_mode="Markdown")
+            except Exception as e:
+                print(f"Markdown Error: {e}, falling back to plain text.")
+                await update.message.reply_text(response_text)
+
 
         # We only need one session, so break after usage
         break

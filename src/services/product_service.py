@@ -13,40 +13,72 @@ class ProductService:
         Includes variants in the result.
         """
         # Clean query text
-        clean_query = query_text.strip().lower()
+        import re
+        # Remove punctuation (keep alphanumeric and spaces)
+        clean_query = re.sub(r'[^\w\s]', '', query_text.strip().lower())
         
-        # Strategy:
-        # 1. Split message into words.
-        # 2. Filter out short words (stop words approximation).
-        # 3. Search for ANY word matching product name/desc/category.
+        # Keywords that imply "Show me everything" or "What do you have?"
+        BROAD_MATCH_KEYWORDS = {
+            "catalogo", "catálogo", "lista", "productos", "vendes", 
+            "tienes", "stock", "precio", "precios", "comprar", 
+            "disponible", "ver", "mostrame", "muéstrame", "muestrame",
+            "quiero", "busco", "necesito", "quisiera"
+        }
         
         words = clean_query.split()
-        search_terms = [w for w in words if len(w) > 3] # Ignora "un", "de", "el", etc.
+        
+        # Check if broad match
+        is_broad_intent = any(w in BROAD_MATCH_KEYWORDS for w in words)
+            
+        # Filter search terms: Words > 3 chars AND NOT in BROAD_MATCH_KEYWORDS
+        search_terms = [w for w in words if len(w) > 3 and w not in BROAD_MATCH_KEYWORDS] 
 
-        if not search_terms:
+        # If it's a broad intent or we have valid search terms
+        if not search_terms and not is_broad_intent:
             return []
 
-        # Build dynamic OR clauses for each term
-        # We search in Product fields AND Variant fields
-        conditions = []
-        for term in search_terms:
-            conditions.append(col(Product.name).ilike(f"%{term}%"))
-            conditions.append(col(Product.description).ilike(f"%{term}%"))
-            conditions.append(col(Product.category).ilike(f"%{term}%"))
-            # Variant fields
-            conditions.append(col(ProductVariant.color).ilike(f"%{term}%"))
-            conditions.append(col(ProductVariant.size).ilike(f"%{term}%"))
-            conditions.append(col(ProductVariant.sku).ilike(f"%{term}%"))
+        # Build Query
+        statement = select(Product).options(selectinload(Product.variants)).where(Product.store_id == store_id).where(Product.status == "active")
 
-        statement = (
-            select(Product)
-            .outerjoin(ProductVariant) # JOIN to search in variants
-            .where(Product.store_id == store_id)
-            .where(Product.status == "active")
-            .where(or_(*conditions))
-            .options(selectinload(Product.variants))
-        )
-        
+        if not search_terms:
+            # Return top 10 active products if purely broad intent (e.g. "que tienes?")
+            # or if keywords stripped all terms resulting in empty search list but valid intent
+            statement = statement.limit(10)
+        else:
+             # Specific Search
+            conditions = []
+            for term in search_terms:
+                # Basic Plural Handling: Try to match singular forms too
+                variations = {term}
+                if term.endswith('s'):
+                    variations.add(term[:-1]) # jeans -> jean
+                if term.endswith('es'):
+                    variations.add(term[:-2]) # colores -> color
+                
+                # Special Cases (Manual Stemming/Synonyms)
+                if term == "camisas": contents = variations.add("camiseta")
+                if term == "poleras": variations.add("camiseta")
+                if term == "pols": variations.add("polo") # Typo handling example
+                
+                # Create OR group for this term's variations
+                term_conditions = []
+                for var in variations:
+                    term_conditions.append(col(Product.name).ilike(f"%{var}%"))
+                    term_conditions.append(col(Product.description).ilike(f"%{var}%"))
+                    term_conditions.append(col(Product.category).ilike(f"%{var}%"))
+                    # Variant fields
+                    term_conditions.append(col(ProductVariant.color).ilike(f"%{var}%"))
+                    term_conditions.append(col(ProductVariant.sku).ilike(f"%{var}%"))
+                
+                # Combine variations with OR, and add to main AND list? 
+                # Wait, strictly we want (TermA_Var1 OR TermA_Var2) AND (TermB_Var1 OR TermB_Var2) 
+                # But current logic was `conditions.append...` which implies OR across ALL terms if we use `or_(*conditions)`.
+                # Original logic: `where(or_(*conditions))` -> Any term matching any field is enough.
+                # So we just dump all variations into the big OR list.
+                conditions.extend(term_conditions)
+            
+            statement = statement.outerjoin(ProductVariant).where(or_(*conditions))
+
         result = await db.execute(statement)
         products = result.scalars().all()
         
