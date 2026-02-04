@@ -12,7 +12,8 @@ from src.infrastructure.web.main import app
 
 def run_web():
     print("🚀 Starting FastAPI Web App...")
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
 def run_bot():
     print("🤖 Starting Telegram Bot (Polling)...")
